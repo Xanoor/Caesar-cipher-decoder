@@ -1,6 +1,18 @@
+/*
+     _____                           _____ _       _               _____                     _
+    / ____|                         / ____(_)     | |             |  __ \                   | |
+   | |     __ _  ___  ___  __ _ _ _| (___  _ _ __ | |__   ___ _ __| |  | | ___  ___ ___   __| | ___ _ __
+   | |    / _` |/ _ \/ __|/ _` | '__\___ \| | '_ \| '_ \ / _ \ '__| |  | |/ _ \/ __/ _ \ / _` |/ _ \ '__|
+   | |___| (_| |  __/\__ \ (_| | |  ____) | | |_) | | | |  __/ |  | |__| |  __/ (_| (_) | (_| |  __/ |
+    \_____\__,_|\___||___/\__,_|_| |_____/|_| .__/|_| |_|\___|_|  |_____/ \___|\___\___/ \__,_|\___|_|
+                                            | |
+                                            |_|
+*/
+
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"strings"
@@ -8,11 +20,20 @@ import (
 
 var alphabet = []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"}
 var specials = []string{" ", ".", ",", ";", "!", "?"}
-var numberOfTest int = 100
+var numberOfTest int = 20
 var currentStep int = numberOfTest
+var wordList = "words.txt"
 
-var hashText string = "Ot kdgsototm znk yuioukiutusoi xgsoloigzouty ul mruhgrofgzout, utk sayz giqtucrkjmk znk vgxgjud zngz cnork oz ngy lgiorozgzkj atvxkikjktzkj kiutusoi mxuczn gtj iarzaxgr kdingtmk, oz ngy gryu kdgikxhgzkj otkwagrozoky huzn coznot gtj hkzckkt tgzouty. Znk xgvoj lruc ul igvozgr gtj otluxsgzout, cnork hktkloiogr lux ikxzgot ykizuxy, ulzkt rkgbky sgxmotgrofkj iussatozoky laxznkx joyktlxgtinoykj, ixkgzotm g ieirk ul vubkxze zngz oy jolloiarz zu kyigvk. Iutykwaktzre, g nuroyzoi gvvxugin zngz ktiusvgyyky lgox zxgjk vxgizoiky, yayzgotghrk jkbkruvsktz, gtj kwaozghrk xkyuaxik joyzxohazout oy kyyktzogr zu ngxtkyy znk hktklozy ul mruhgrofgzout coznuaz ygixoloiotm znk ckrr-hkotm ul znk suyz bartkxghrk vuvargzouty."
+var Reset = "\033[0m"
+var Red = "\033[31m"
+var Green = "\033[32m"
 
+type probabilityStruct struct {
+	Probability int
+	Shift       int
+}
+
+// RETURN CONTENT OF WORDLIST
 func getFileData(filename string) (string, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
@@ -21,6 +42,7 @@ func getFileData(filename string) (string, error) {
 	return string(data), nil
 }
 
+// GET CHAR BY TRANSLATING ALPHABET (KEY2, A->C)
 func getChar(startingIndex int) string {
 	var currentIndex = startingIndex
 	for i := currentStep; i > 0; i-- {
@@ -29,6 +51,7 @@ func getChar(startingIndex int) string {
 	return alphabet[currentIndex]
 }
 
+// GENERATE NEW ALPHABET BASE ON CAESAR KEY
 func newAlphabet() []string {
 	var newAlphabet []string
 
@@ -38,6 +61,7 @@ func newAlphabet() []string {
 	return newAlphabet
 }
 
+// VERIFY IF A CARACTER IS SPECIAL
 func isSpecial(char string) bool {
 	for i := range specials {
 		if char == specials[i] {
@@ -47,6 +71,7 @@ func isSpecial(char string) bool {
 	return false
 }
 
+// RETURN INDEX OF REAL ALPHABET
 func getIndex(char string) int {
 	for i := range alphabet {
 		if isSpecial(char) {
@@ -56,10 +81,10 @@ func getIndex(char string) int {
 			return i
 		}
 	}
-
 	return -1
 }
 
+// RETURN MAX VALUE OF ARR (MAX OCCURENCE)
 func getMax(arr []int) int {
 	var max = 0
 	var maxIndex = 0
@@ -72,41 +97,57 @@ func getMax(arr []int) int {
 	return maxIndex
 }
 
-func getPotentials(arr []int) []string {
-	var maxVal = getMax(arr)
-	var potentials []string
-	for i := range arr {
-		if occurenceList[i] > maxVal-1 {
-			potentials = append(potentials, textVariants[i])
+// SORT PROBABILITY ARRAY (STRONGER TO WEAKEST)
+func getProbabilityArr(arr []probabilityStruct) []probabilityStruct {
+	n := len(arr)
+	for i := 0; i < n; i++ {
+		for j := 0; j < n-i-1; j++ {
+			if arr[j].Probability < arr[j+1].Probability {
+				arr[j], arr[j+1] = arr[j+1], arr[j]
+			}
 		}
 	}
-	return potentials
+	return arr
 }
 
 var textVariants []string
+var ShiftList []int
 var occurenceList []int
 
 func main() {
-	wordsListData, err := getFileData("words.txt")
+	wordsListData, err := getFileData(wordList)
 	if err != nil {
 		return
 	}
 
+	fmt.Println("Enter your hashed text:")
+	reader := bufio.NewReader(os.Stdin)
+	hashText, err := reader.ReadString('\n')
+	fmt.Println("\n\nResult:")
+
+	if err != nil {
+		fmt.Println("An error occurred!")
+		return
+	}
+
+	//FOR EVERY TEST, DO THIS:
 	for range numberOfTest {
-		newAlph := newAlphabet()
+		newAlph := newAlphabet() //CREATE NEW ALPHABET
 		var newText string
 		for i := range hashText {
-			alphIndex := getIndex(strings.ToLower(string(hashText[i])))
+			alphIndex := getIndex(strings.ToLower(string(hashText[i]))) //RETURN INDEX OF hashText[i]
 			if alphIndex == -1 {
 				newText += string(hashText[i])
 			} else {
 				newText += newAlph[alphIndex]
 			}
 		}
-		currentStep--
+		ShiftList = append(ShiftList, currentStep)
 		textVariants = append(textVariants, newText)
+		currentStep--
 	}
 
+	//PERFORM OCCURENCE TEST
 	for i := range textVariants {
 		var occurence = 0
 		splittedText := strings.Split(textVariants[i], " ")
@@ -118,6 +159,22 @@ func main() {
 		occurenceList = append(occurenceList, occurence)
 	}
 
-	fmt.Println("The good sentence is \n" + textVariants[getMax(occurenceList)])
+	var probability_shift_list []probabilityStruct
+	if len(occurenceList) == len(ShiftList) {
+		for i := range occurenceList {
+			probability_shift_list = append(probability_shift_list, probabilityStruct{Probability: occurenceList[i], Shift: ShiftList[i]})
+		}
+	}
 
+	probArr := getProbabilityArr(probability_shift_list)
+	for i := range probArr {
+		if probArr[i].Probability >= 20 || i == 0 {
+			fmt.Printf("%sProbability: %-5dShift %d%s\n", Red, probArr[i].Probability, probArr[i].Shift, Reset)
+		} else {
+			fmt.Printf("Probability: %-5dShift %d\n", probArr[i].Probability, probArr[i].Shift)
+		}
+	}
+
+	strongerShiftIndex := getMax(occurenceList)
+	fmt.Printf("%s\nThe best response is [Shift used: %d]:%s \n%s", Green, ShiftList[strongerShiftIndex], Reset, textVariants[strongerShiftIndex])
 }
