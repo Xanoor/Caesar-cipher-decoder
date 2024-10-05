@@ -18,12 +18,23 @@ import (
 	"strings"
 )
 
-var alphabet = []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"}
-var specials = []string{" ", ".", ",", ";", "!", "?"}
-var numberOfTest int = 20
-var currentStep int = numberOfTest
-var wordList = "words.txt"
+// Modify variables here: //
 
+var wordList = "words.txt" // wordlist to be used
+var numberOfTest int = 26  // number of tests (max length of the alphabet used)
+
+////////////////////////////
+
+var alphabet = []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"}
+var specials string = " .,?!:;()[]{}«»\"'’-_/\\$€£¥₣₽+−×÷=≠><≥≤%^√π∞@#*&^~|¿¡§¶éèëüçâêîôû"
+
+// Don't modify this !
+var currentStep int = numberOfTest
+var textVariants []string
+var ShiftList []int
+var occurenceList []int
+
+// Color codes
 var Reset = "\033[0m"
 var Red = "\033[31m"
 var Green = "\033[32m"
@@ -42,7 +53,7 @@ func getFileData(filename string) (string, error) {
 	return string(data), nil
 }
 
-// GET CHAR BY TRANSLATING ALPHABET (KEY2, A->C)
+// GET CHARACTER BY TRANSLATING ALPHABET (KEY2, A->C)
 func getChar(startingIndex int) string {
 	var currentIndex = startingIndex
 	for i := currentStep; i > 0; i-- {
@@ -51,7 +62,7 @@ func getChar(startingIndex int) string {
 	return alphabet[currentIndex]
 }
 
-// GENERATE NEW ALPHABET BASE ON CAESAR KEY
+// GENERATE A NEW ALPHABET BASED ON THE CAESAR KEY
 func newAlphabet() []string {
 	var newAlphabet []string
 
@@ -61,20 +72,10 @@ func newAlphabet() []string {
 	return newAlphabet
 }
 
-// VERIFY IF A CARACTER IS SPECIAL
-func isSpecial(char string) bool {
-	for i := range specials {
-		if char == specials[i] {
-			return true
-		}
-	}
-	return false
-}
-
-// RETURN INDEX OF REAL ALPHABET
+// RETURN INDEX OF THE REAL ALPHABET
 func getIndex(char string) int {
 	for i := range alphabet {
-		if isSpecial(char) {
+		if strings.Contains(alphabet[i], specials) {
 			return -1
 		}
 		if char == alphabet[i] {
@@ -84,8 +85,8 @@ func getIndex(char string) int {
 	return -1
 }
 
-// RETURN MAX VALUE OF ARR (MAX OCCURENCE)
-func getMax(arr []int) int {
+// RETURN MAX VALUE OF AN ARRAY (MAX OCCURRENCE)
+func getMax(arr []int) (int, int) {
 	var max = 0
 	var maxIndex = 0
 	for i := range arr {
@@ -94,10 +95,10 @@ func getMax(arr []int) int {
 			maxIndex = i
 		}
 	}
-	return maxIndex
+	return maxIndex, max
 }
 
-// SORT PROBABILITY ARRAY (STRONGER TO WEAKEST)
+// SORT PROBABILITY ARRAY (FROM STRONGEST TO WEAKEST)
 func getProbabilityArr(arr []probabilityStruct) []probabilityStruct {
 	n := len(arr)
 	for i := 0; i < n; i++ {
@@ -110,32 +111,48 @@ func getProbabilityArr(arr []probabilityStruct) []probabilityStruct {
 	return arr
 }
 
-var textVariants []string
-var ShiftList []int
-var occurenceList []int
+// VERIFY IF A FILE WITH THE GIVEN PATH EXISTS
+func isFileValid(path string) bool {
+	if _, err := os.Stat(path); err == nil {
+		return true
+	}
+	return false
+}
 
 func main() {
+	ASCII, err := getFileData("ASCIIart.txt")
+	if err == nil {
+		fmt.Println(ASCII)
+	}
+
 	wordsListData, err := getFileData(wordList)
 	if err != nil {
 		return
 	}
 
-	fmt.Println("Enter your hashed text:")
+	fmt.Println(Green + "Enter your hashed text: [raw text / file name (txt)]" + Reset)
 	reader := bufio.NewReader(os.Stdin)
 	hashText, err := reader.ReadString('\n')
-	fmt.Println("\n\nResult:")
+	hashText = strings.TrimSpace(hashText)
+
+	// If a file with hashText name exist, read content
+	if isFileValid(hashText) && len(hashText) < 255 {
+		hashText, err = getFileData(hashText)
+	}
+
+	fmt.Println("\nResult:")
 
 	if err != nil {
 		fmt.Println("An error occurred!")
 		return
 	}
 
-	//FOR EVERY TEST, DO THIS:
+	// FOR EVERY TEST, DO THIS:
 	for range numberOfTest {
-		newAlph := newAlphabet() //CREATE NEW ALPHABET
+		newAlph := newAlphabet() // CREATE A NEW ALPHABET
 		var newText string
 		for i := range hashText {
-			alphIndex := getIndex(strings.ToLower(string(hashText[i]))) //RETURN INDEX OF hashText[i]
+			alphIndex := getIndex(strings.ToLower(string(hashText[i]))) // RETURN INDEX OF hashText[i]
 			if alphIndex == -1 {
 				newText += string(hashText[i])
 			} else {
@@ -147,12 +164,12 @@ func main() {
 		currentStep--
 	}
 
-	//PERFORM OCCURENCE TEST
+	// PERFORM OCCURRENCE TEST
 	for i := range textVariants {
 		var occurence = 0
 		splittedText := strings.Split(textVariants[i], " ")
 		for w := range splittedText {
-			if strings.Contains(string(wordsListData), " "+splittedText[w]) {
+			if strings.Contains(string(wordsListData), " "+splittedText[w]+" ") {
 				occurence++
 			}
 		}
@@ -167,14 +184,20 @@ func main() {
 	}
 
 	probArr := getProbabilityArr(probability_shift_list)
+	var maxProb int
+	//Show shift by probability
 	for i := range probArr {
-		if probArr[i].Probability >= 20 || i == 0 {
+		if i == 0 {
+			maxProb = probArr[i].Probability
+		}
+		if probArr[i].Probability >= 20 || i == 0 || probArr[i].Probability == maxProb {
 			fmt.Printf("%sProbability: %-5dShift %d%s\n", Red, probArr[i].Probability, probArr[i].Shift, Reset)
 		} else {
 			fmt.Printf("Probability: %-5dShift %d\n", probArr[i].Probability, probArr[i].Shift)
 		}
 	}
 
-	strongerShiftIndex := getMax(occurenceList)
-	fmt.Printf("%s\nThe best response is [Shift used: %d]:%s \n%s", Green, ShiftList[strongerShiftIndex], Reset, textVariants[strongerShiftIndex])
+	strongerShiftIndex, probValue := getMax(occurenceList)
+	fmt.Printf("%s\nThe best response is [Shift used: %d, Probability: %d]:%s \n%s", Green, ShiftList[strongerShiftIndex], probValue, Reset, textVariants[strongerShiftIndex])
+	fmt.Printf("%s\n----------------------END----------------------%s", Green, Reset)
 }
