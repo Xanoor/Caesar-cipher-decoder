@@ -130,14 +130,14 @@ func main() {
 		return
 	}
 
-	fmt.Println(Green + "Enter your hashed text: [raw text / file name (txt)]" + Reset)
+	fmt.Println(Green + "Enter your encrypted text: [raw text / file name (txt)]" + Reset)
 	reader := bufio.NewReader(os.Stdin)
-	hashText, err := reader.ReadString('\n')
-	hashText = strings.TrimSpace(hashText)
+	encryptedText, err := reader.ReadString('\n')
+	encryptedText = strings.TrimSpace(encryptedText)
 
-	// If a file with hashText name exist, read content
-	if isFileValid(hashText) && len(hashText) < 255 {
-		hashText, err = getFileData(hashText)
+	// If a file with encryptedText name exist, read content
+	if isFileValid(encryptedText) && len(encryptedText) < 255 {
+		encryptedText, err = getFileData(encryptedText)
 	}
 
 	fmt.Println("\nResult:")
@@ -151,10 +151,10 @@ func main() {
 	for range numberOfTest {
 		newAlph := newAlphabet() // CREATE A NEW ALPHABET
 		var newText string
-		for i := range hashText {
-			alphIndex := getIndex(strings.ToLower(string(hashText[i]))) // RETURN INDEX OF hashText[i]
+		for i := range encryptedText {
+			alphIndex := getIndex(strings.ToLower(string(encryptedText[i]))) // RETURN INDEX OF encryptedText[i]
 			if alphIndex == -1 {
-				newText += string(hashText[i])
+				newText += string(encryptedText[i])
 			} else {
 				newText += newAlph[alphIndex]
 			}
