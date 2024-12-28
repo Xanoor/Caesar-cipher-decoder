@@ -18,12 +18,8 @@ import (
 	"strings"
 )
 
-// Modify variables here: //
-
 var wordList = "words.txt" // wordlist to be used
 var numberOfTest int = 26  // number of tests (max length of the alphabet used)
-
-////////////////////////////
 
 var alphabet = []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"}
 var specials string = " .,?!:;()[]{}«»\"'’-_/\\$€£¥₣₽+−×÷=≠><≥≤%^√π∞@#*&^~|¿¡§¶éèëüçâêîôû"
@@ -152,11 +148,16 @@ func main() {
 		newAlph := newAlphabet() // CREATE A NEW ALPHABET
 		var newText string
 		for i := range encryptedText {
-			alphIndex := getIndex(strings.ToLower(string(encryptedText[i]))) // RETURN INDEX OF encryptedText[i]
+			currentChar := string(encryptedText[i])
+			alphIndex := getIndex(strings.ToLower(currentChar)) // RETURN INDEX OF encryptedText[i]
 			if alphIndex == -1 {
 				newText += string(encryptedText[i])
 			} else {
-				newText += newAlph[alphIndex]
+				if currentChar == strings.ToUpper(currentChar) { // Detect uppercase
+					newText += strings.ToUpper(newAlph[alphIndex])
+				} else {
+					newText += newAlph[alphIndex]
+				}
 			}
 		}
 		ShiftList = append(ShiftList, currentStep)
@@ -169,7 +170,7 @@ func main() {
 		var occurence = 0
 		splittedText := strings.Split(textVariants[i], " ")
 		for w := range splittedText {
-			if strings.Contains(string(wordsListData), " "+splittedText[w]+" ") {
+			if strings.Contains(string(wordsListData), " "+strings.ToLower(splittedText[w])+" ") {
 				occurence++
 			}
 		}
